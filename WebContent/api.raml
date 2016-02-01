@@ -1,0 +1,216 @@
+#%RAML 0.8
+title: phonebook
+version: 1.0.0
+baseUri: http://example.com/api
+protocols: [ HTTP ]
+securitySchemes:
+  - userKey:
+      description: User Key for API authentication
+      type: x-user-key
+      describedBy:
+        headers:
+          Authentication:
+            type: string
+securedBy: [userKey]
+schemas: 
+  - phonebookEntries-xml: |
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <xs:schema version="1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        
+          <xs:element name="phonebookEntries" type="phonebookEntries"/>
+        
+          <xs:element name="phonebookEntry" type="phonebookEntry"/>
+        
+          <xs:complexType name="phonebookEntries">
+            <xs:sequence>
+              <xs:element name="entries" type="phonebookEntry" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        
+          <xs:complexType name="phonebookEntry">
+            <xs:sequence>
+              <xs:element name="id" type="xs:long"/>
+              <xs:element name="title" type="xs:string" minOccurs="0"/>
+              <xs:element name="firstName" type="xs:string" minOccurs="0"/>
+              <xs:element name="lastName" type="xs:string" minOccurs="0"/>
+              <xs:element name="phoneNumber" type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:schema>
+  - phonebookEntries: |
+        {
+          "$schema" : "http://json-schema.org/draft-03/schema" ,
+          "type" : "object" ,
+          "required" : true ,
+          "properties" : {
+            "entries" : {
+              "type" : "array" ,
+              "required" : false ,
+              "items" : [
+                {
+                  "required" : false ,
+                  "type" : "object" ,
+                  "properties" : {
+                    "id" : {
+                      "required" : false ,
+                      "type" : "number"
+                    } ,
+                    "title" : {
+                      "required" : false ,
+                      "type" : "string"
+                    } ,
+                    "firstName" : {
+                      "required" : false ,
+                      "type" : "string"
+                    } ,
+                    "lastName" : {
+                      "required" : false ,
+                      "type" : "string"
+                    } ,
+                    "phoneNumber" : {
+                      "required" : false ,
+                      "type" : "string"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+  - phonebookEntry-xml: |
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <xs:schema version="1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        
+          <xs:element name="phonebookEntry" type="phonebookEntry"/>
+        
+          <xs:complexType name="phonebookEntry">
+            <xs:sequence>
+              <xs:element name="id" type="xs:long"/>
+              <xs:element name="title" type="xs:string" minOccurs="0"/>
+              <xs:element name="firstName" type="xs:string" minOccurs="0"/>
+              <xs:element name="lastName" type="xs:string" minOccurs="0"/>
+              <xs:element name="phoneNumber" type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:schema>
+  - phonebookEntry: |
+        {
+          "$schema" : "http://json-schema.org/draft-03/schema" ,
+          "type" : "object" ,
+          "required" : true ,
+          "properties" : {
+            "id" : {
+              "required" : false ,
+              "type" : "number"
+            } ,
+            "title" : {
+              "required" : false ,
+              "type" : "string"
+            } ,
+            "firstName" : {
+              "required" : false ,
+              "type" : "string"
+            } ,
+            "lastName" : {
+              "required" : false ,
+              "type" : "string"
+            } ,
+            "phoneNumber" : {
+              "required" : false ,
+              "type" : "string"
+            }
+          }
+        }
+/phonebook: 
+  post: 
+    description: Adds entry to phonebook
+    body: 
+      application/json: 
+        schema: phonebookEntry
+        example: |
+          {
+            "id" : 123 ,
+            "title" : "str1234" ,
+            "firstName" : "str1234" ,
+            "lastName" : "str1234" ,
+            "phoneNumber" : "str1234"
+          }
+    responses: 
+      201: 
+        description: Created successfully
+  get: 
+    description: Returns list of entries matching the query
+    queryParameters: 
+      title: 
+      firstname: 
+      lastname: 
+    responses: 
+      200: 
+        description: OK
+        body: 
+          application/json: 
+            schema: phonebookEntries
+            example: |
+              {
+                "entries" : [
+                  {
+                    "id" : 123 ,
+                    "title" : "str1234" ,
+                    "firstName" : "str1234" ,
+                    "lastName" : "str1234" ,
+                    "phoneNumber" : "str1234"
+                  } , {
+                    "id" : 123 ,
+                    "title" : "str1234" ,
+                    "firstName" : "str1234" ,
+                    "lastName" : "str1234" ,
+                    "phoneNumber" : "str1234"
+                  }
+                ]
+              }
+  /{id}: 
+    get: 
+      description: Returns entry with provided ID
+      responses: 
+        200: 
+          description: OK
+          body: 
+            application/json: 
+              schema: phonebookEntry
+              example: |
+                {
+                  "id" : 123 ,
+                  "title" : "str1234" ,
+                  "firstName" : "str1234" ,
+                  "lastName" : "str1234" ,
+                  "phoneNumber" : "str1234"
+                }
+        404: 
+          description: Entry not found for given ID
+          body: 
+            application/json: 
+    put: 
+      description: Updates an existing entry in the phonebook
+      body: 
+        application/json: 
+          schema: phonebookEntry
+          example: |
+            {
+              "id" : 123 ,
+              "title" : "str1234" ,
+              "firstName" : "str1234" ,
+              "lastName" : "str1234" ,
+              "phoneNumber" : "str1234"
+            }
+      responses: 
+        204: 
+          description: OK
+        404: 
+          description: Entry not found for given ID
+    delete: 
+      description: Deletes an existing entry from the phonebook
+      responses: 
+        204: 
+          description: OK
+        404: 
+          description: Entry not found for given ID
