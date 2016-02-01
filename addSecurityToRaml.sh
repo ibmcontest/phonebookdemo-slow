@@ -1,3 +1,9 @@
+# This script adds Security Scheme Definition to the RAML file
+# To generate the starter RAML file, install the JAX-RS to RAML eclipse
+# plugin:
+#  https://github.com/mulesoft/raml-for-jax-rs/blob/master/eclipseplugin.md
+# And generate the RAML file into ./WebContent directory
+
 set -e
 
 TARGET_FILE="./WebContent/api.raml"
