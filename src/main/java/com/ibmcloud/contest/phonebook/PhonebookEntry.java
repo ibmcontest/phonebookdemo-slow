@@ -44,6 +44,17 @@ public class PhonebookEntry {
         this.firstName = firstName;
         this.lastName = lastName;
         this.phoneNumber = phoneNumber;
+        this.userkey = null;
+    }
+
+    public PhonebookEntry(final String title, final String firstName, final String lastName,
+            final String phoneNumber, final String userkey) {
+        super();
+        this.title = title;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.phoneNumber = phoneNumber;
+        this.userkey = userkey;
     }
 
     @Id
@@ -72,6 +83,11 @@ public class PhonebookEntry {
     @Column(name = "PHONENUMBER")
     @XmlElement(name = "phoneNumber")
     String phoneNumber;
+
+    @Basic
+    @Column(name = "USERKEY")
+    @XmlElement(name = "userkey")
+    String userkey;
 
     public long getId() {
         return id;
@@ -111,6 +127,14 @@ public class PhonebookEntry {
 
     public void setPhoneNumber(final String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getUserkey() {
+        return userkey;
+    }
+
+    public void setUserKey(final String userkey) {
+        this.userkey = userkey;
     }
 
     // Simple equals method to check if title, name, and phone number are the same as "other"

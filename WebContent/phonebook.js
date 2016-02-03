@@ -17,58 +17,87 @@
 angular.module('phonebook', [])
 
 .controller('PhonebookList', function($scope, $http, $location, $window) {
+  $scope.authkey = $location.search().key;
+  var id = 0;
+  $scope.auth = {
+    valid: false
+  };
+  $scope.entry = {
+    title: "",
+    firstName: "",
+    lastName: "",
+    phoneNumber: ""
+  };
+  loadEntries();
 
-	var id = 0;
-	$scope.entry = {title : "", firstName : "", lastName : "", phoneNumber : ""};
+  function loadEntries() {
+    $http.get('api/phonebook?Authorization=' + $scope.authkey).success(function(data) {
+      $scope.auth.valid = true;
+      $scope.entries = data.entries;
+    }).error(function(data, status) {
+      $scope.auth.valid = false;
+    });
+  }
 
-	$http.get('api/phonebook').success(function(data) {
-		$scope.entries = data.entries;
-	});
+  $scope.loadKey = function() {
+    loadEntries();
+    $scope.attemptedLoad = true;
+  };
+  $scope.createKey = function() {
+    $http.post('api/user', {}).then(function(data) {
+      $scope.authkey = data.data.userkey;
+      loadEntries();
+    });
+  };
 
-	$scope.loadEntry = function() {
+  $scope.loadEntry = function() {
+    if (id) {
+      $http.get('api/phonebook/' + id + "?Authorization=" + $scope.authkey).success(function(data) {
+        $scope.entry = data;
+      });
+    } else {
+      $scope.entry = {
+        title: "",
+        firstName: "",
+        lastName: "",
+        phoneNumber: ""
+      };
+    }
 
-		if (id) {
-			$http.get('api/phonebook/' + id).success(function(data) {
-				$scope.entry = data;
-			});
-		} else {
-			$scope.entry = {title : "", firstName : "", lastName : "", phoneNumber : ""};
-		}
+  };
 
-	};
+  $scope.setId = function(_id) {
+    id = _id;
+  };
 
-	$scope.setId = function(_id) {
-		id = _id;
-	};
+  $scope.remove = function() {
 
-	$scope.remove = function() {
+    $http['delete']('api/phonebook/' + id + "?Authorization=" + $scope.authkey).then(function(data) {
+      loadEntries();
+    });
 
-		$http['delete']('api/phonebook/' + id).then(function(data) {
-			$window.location.reload();
-		});
+  };
 
-	};
-
-	$scope.submit = function() {
-		if (id) {
-			$http.put('api/phonebook/' + id, {
-				title : $scope.entry.title,
-				firstName : $scope.entry.firstName,
-				lastName : $scope.entry.lastName,
-				phoneNumber : $scope.entry.phoneNumber
-			}).then(function(data) {
-				$window.location.reload();
-			});
-		} else {
-			$http.post('api/phonebook', {
-				title : $scope.entry.title,
-				firstName : $scope.entry.firstName,
-				lastName : $scope.entry.lastName,
-				phoneNumber : $scope.entry.phoneNumber
-			}).then(function(data) {
-				$window.location.reload();
-			});
-		}
-	};
+  $scope.submit = function() {
+    if (id) {
+      $http.put('api/phonebook/' + id + "?Authorization=" + $scope.authkey, {
+        title: $scope.entry.title,
+        firstName: $scope.entry.firstName,
+        lastName: $scope.entry.lastName,
+        phoneNumber: $scope.entry.phoneNumber
+      }).then(function(data) {
+        loadEntries();
+      });
+    } else {
+      $http.post('api/phonebook?Authorization=' + $scope.authkey, {
+        title: $scope.entry.title,
+        firstName: $scope.entry.firstName,
+        lastName: $scope.entry.lastName,
+        phoneNumber: $scope.entry.phoneNumber
+      }).then(function(data) {
+        loadEntries();
+      });
+    }
+  };
 
 });
