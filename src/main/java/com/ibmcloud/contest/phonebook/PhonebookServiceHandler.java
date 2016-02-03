@@ -93,6 +93,7 @@ public class PhonebookServiceHandler implements ReaderListener {
         if (!authenticateUser(userkey)) {
             throw new UnauthorizedException();
         }
+
         final List<PhonebookEntry> checkList = em
                 .createQuery("SELECT t FROM PhonebookEntry t WHERE t.userkey = :user", //$NON-NLS-1$
                         PhonebookEntry.class)
@@ -343,7 +344,31 @@ public class PhonebookServiceHandler implements ReaderListener {
             return false;
         }
         final UserEntry checkEntry = em.find(UserEntry.class, userkey);
-        return (checkEntry != null);
+
+        if (checkEntry != null) {
+            // Issue random delay once user is authenticated
+            randomDelay(10, 500);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Create random delay
+     *
+     * @param min
+     *            minimum delay in milliseconds
+     * @param max
+     *            maximum delay in milliseconds
+     */
+    private void randomDelay(final int min, final int max) {
+        final Random rand = new Random();
+
+        try {
+            Thread.sleep(rand.nextInt((max - min) + 1) + min);
+        } catch (final InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /** {@inheritDoc} */
