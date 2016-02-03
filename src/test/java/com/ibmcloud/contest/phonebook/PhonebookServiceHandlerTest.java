@@ -41,7 +41,7 @@ import com.ibmcloud.contest.phonebook.util.CustomUserTransaction;
 public class PhonebookServiceHandlerTest {
 
     private static final String DUMMYHOST = "http://dummyhost:1234/api/phonebook";
-    private static final String USERKEY = "user-token xxxx-xxxx";
+    private static final String USERKEY = "12345678900";
     private static EntityManager em;
     private static UserTransaction utx;
 
@@ -65,6 +65,7 @@ public class PhonebookServiceHandlerTest {
     public void beforeEach() throws Exception {
         utx.begin();
         em.createQuery("DELETE FROM PhonebookEntry").executeUpdate();
+        em.createQuery("DELETE FROM UserEntry").executeUpdate();
         utx.commit();
 
         // Mock out uriInfo, it's easier then implementing it, but need to know which method is being called.
@@ -82,10 +83,28 @@ public class PhonebookServiceHandlerTest {
         utx.commit();
     }
 
+    private void addUser(final UserEntry user) throws Exception {
+        utx.begin();
+        em.persist(user);
+        em.flush();
+        utx.commit();
+    }
+
+    @Test
+    public void createUser() {
+        final UserEntry entry = (UserEntry) phonebookServiceHandler.createUser().getEntity();
+        assertEquals(entry.getKey().length(), 11);
+
+        final UserEntry findEntry = em.find(UserEntry.class, entry.getKey());
+        assertEquals(findEntry.getKey(), entry.getKey());
+
+    }
+
     @Test
     public void initPhonebook() throws Exception {
         when(uriInfo.getAbsolutePath()).thenReturn(new URI(DUMMYHOST));
 
+        addUser(new UserEntry(USERKEY));
         final PhonebookEntries entries = phonebookServiceHandler.queryPhonebook(USERKEY, null, null, null);
 
         assertEquals(2, entries.getEntries().size());
@@ -98,9 +117,10 @@ public class PhonebookServiceHandlerTest {
 
     @Test
     public void queryPhonebook() throws Exception {
-        final PhonebookEntry entry1 = new PhonebookEntry("Mr", "John", "Smith", "12345");
-        final PhonebookEntry entry2 = new PhonebookEntry("Ms", "Jane", "Doe", "67890");
-        final PhonebookEntry entry3 = new PhonebookEntry("Ms", "Jessica", "Rabbit", "1111-2222");
+        addUser(new UserEntry(USERKEY));
+        final PhonebookEntry entry1 = new PhonebookEntry("Mr", "John", "Smith", "12345", USERKEY);
+        final PhonebookEntry entry2 = new PhonebookEntry("Ms", "Jane", "Doe", "67890", USERKEY);
+        final PhonebookEntry entry3 = new PhonebookEntry("Ms", "Jessica", "Rabbit", "1111-2222", USERKEY);
         createEntries(Arrays.asList(entry1, entry2, entry3));
 
         PhonebookEntries entries = phonebookServiceHandler.queryPhonebook(USERKEY, null, null, null);
@@ -122,11 +142,19 @@ public class PhonebookServiceHandlerTest {
         assertEquals(true, entries.getEntries().get(0).equals(entry3));
     }
 
+    @Test(expected = UnauthorizedException.class)
+    public void queryPhonebookUnauthorized() throws Exception {
+        phonebookServiceHandler.queryPhonebook(USERKEY, null, null, null);
+    }
+
     @Test
     public void getEntry() throws Exception {
-        final PhonebookEntry entry1 = new PhonebookEntry("Mr", "John", "Smith", "12345");
-        final PhonebookEntry entry2 = new PhonebookEntry("Mrs", "Jane", "Doe", "67890");
-        final PhonebookEntry entry3 = new PhonebookEntry("Ms", "Jessica", "Rabbit", "1111-2222");
+
+        addUser(new UserEntry(USERKEY));
+
+        final PhonebookEntry entry1 = new PhonebookEntry("Mr", "John", "Smith", "12345", USERKEY);
+        final PhonebookEntry entry2 = new PhonebookEntry("Mrs", "Jane", "Doe", "67890", USERKEY);
+        final PhonebookEntry entry3 = new PhonebookEntry("Ms", "Jessica", "Rabbit", "1111-2222", USERKEY);
         createEntries(Arrays.asList(entry1, entry2, entry3));
 
         PhonebookEntry returnedEntry = phonebookServiceHandler.getEntry(USERKEY,
@@ -142,6 +170,7 @@ public class PhonebookServiceHandlerTest {
 
     @Test(expected = NotFoundException.class)
     public void getEntryNotFound() throws Exception {
+        addUser(new UserEntry(USERKEY));
         final PhonebookEntry entry1 = new PhonebookEntry("Mr", "John", "Smith", "12345");
         final PhonebookEntry entry2 = new PhonebookEntry("Mrs", "Jane", "Doe", "67890");
         final PhonebookEntry entry3 = new PhonebookEntry("Ms", "Jessica", "Rabbit", "1111-2222");
@@ -150,8 +179,16 @@ public class PhonebookServiceHandlerTest {
         phonebookServiceHandler.getEntry(USERKEY, "10000");
     }
 
+    @Test(expected = UnauthorizedException.class)
+    public void getEntryUnauthorized() throws Exception {
+        phonebookServiceHandler.getEntry(USERKEY, "10000");
+    }
+
     @Test
     public void create() throws Exception {
+
+        addUser(new UserEntry(USERKEY));
+
         final PhonebookEntry entry = new PhonebookEntry("Mr", "John", "Doe", "12345");
         Response response = phonebookServiceHandler.create(USERKEY, entry);
 
@@ -171,12 +208,19 @@ public class PhonebookServiceHandlerTest {
 
     }
 
+    @Test(expected = UnauthorizedException.class)
+    public void createUnauthorized() throws Exception {
+        phonebookServiceHandler.create(USERKEY,
+                new PhonebookEntry("Mr", "John", "Doe", "12345", "jdoe@email.com"));
+    }
+
     @Test
     public void update() throws Exception {
-        final PhonebookEntry entry = new PhonebookEntry("Mr", "John", "Doe", "12345");
+        addUser(new UserEntry(USERKEY));
+        final PhonebookEntry entry = new PhonebookEntry("Mr", "John", "Doe", "12345", USERKEY);
         createEntries(Arrays.asList(entry));
 
-        final PhonebookEntry updateEntry = new PhonebookEntry("Mr", "Jack", "Doe", "12345");
+        final PhonebookEntry updateEntry = new PhonebookEntry("Mr", "Jack", "Doe", "12345", USERKEY);
         final Response response = phonebookServiceHandler.update(USERKEY, String.valueOf(entry.getId()),
                 updateEntry);
 
@@ -189,15 +233,23 @@ public class PhonebookServiceHandlerTest {
 
     @Test(expected = NotFoundException.class)
     public void updateNotFound() throws Exception {
+        addUser(new UserEntry(USERKEY));
         final PhonebookEntry updateEntry = new PhonebookEntry("Mr", "Jack", "Doe", "12345");
         phonebookServiceHandler.update(USERKEY, "10000", updateEntry);
     }
 
+    @Test(expected = UnauthorizedException.class)
+    public void updateUnauthorized() throws Exception {
+        phonebookServiceHandler.update(USERKEY, "10000",
+                new PhonebookEntry("Mr", "Jack", "Doe", "12345", "jdoe@email.com"));
+    }
+
     @Test
     public void deleteEntry() throws Exception {
-        final PhonebookEntry entry1 = new PhonebookEntry("Mr", "John", "Smith", "12345");
-        final PhonebookEntry entry2 = new PhonebookEntry("Mrs", "Jane", "Doe", "67890");
-        final PhonebookEntry entry3 = new PhonebookEntry("Ms", "Jessica", "Rabbit", "1111-2222");
+        addUser(new UserEntry(USERKEY));
+        final PhonebookEntry entry1 = new PhonebookEntry("Mr", "John", "Smith", "12345", USERKEY);
+        final PhonebookEntry entry2 = new PhonebookEntry("Mrs", "Jane", "Doe", "67890", USERKEY);
+        final PhonebookEntry entry3 = new PhonebookEntry("Ms", "Jessica", "Rabbit", "1111-2222", USERKEY);
         createEntries(Arrays.asList(entry1, entry2, entry3));
 
         Response response = phonebookServiceHandler.deleteEntry(USERKEY, String.valueOf(entry2.getId()));
@@ -216,7 +268,13 @@ public class PhonebookServiceHandlerTest {
     }
 
     @Test(expected = NotFoundException.class)
-    public void deleteEntryNotFound() {
+    public void deleteEntryNotFound() throws Exception {
+        addUser(new UserEntry(USERKEY));
+        phonebookServiceHandler.deleteEntry(USERKEY, "10000");
+    }
+
+    @Test(expected = UnauthorizedException.class)
+    public void deleteEntryUnauthorized() throws Exception {
         phonebookServiceHandler.deleteEntry(USERKEY, "10000");
     }
 
