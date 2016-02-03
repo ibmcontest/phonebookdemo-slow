@@ -30,6 +30,7 @@ import javax.transaction.UserTransaction;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -43,16 +44,24 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Authorization;
+import io.swagger.jaxrs.Reader;
+import io.swagger.jaxrs.config.ReaderListener;
+import io.swagger.models.Swagger;
+import io.swagger.models.auth.ApiKeyAuthDefinition;
+import io.swagger.models.auth.In;
 
 @Path("phonebook")
-@Api(value = "/phonebook")
+@Api(value = "/phonebook", authorizations = { @Authorization(value = "apikey_auth") })
 /**
  * CRUD service for phonebook table. It uses REST Style
  *
  */
-public class PhonebookServiceHandler {
+public class PhonebookServiceHandler implements ReaderListener {
+
     @Context
     UriInfo uriInfo;
 
@@ -73,16 +82,17 @@ public class PhonebookServiceHandler {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Returns list of entries matching the query")
-    @ApiResponses(value = { @ApiResponse(code = 200, message = "OK", response = PhonebookEntries.class),
-            @ApiResponse(code = 500, message = "Internal error") })
-    public PhonebookEntries queryPhonebook(@QueryParam("title") final String title,
-            @QueryParam("firstname") final String firstname, @QueryParam("lastname") final String lastname) {
+    @ApiResponses(value = { @ApiResponse(code = 200, message = "OK", response = PhonebookEntries.class) })
+    public PhonebookEntries queryPhonebook(
+            @ApiParam(hidden = true) @HeaderParam("Authorization") final String userkey,
+            @QueryParam("title") final String title, @QueryParam("firstname") final String firstname,
+            @QueryParam("lastname") final String lastname) {
 
         final List<PhonebookEntry> checkList = em
                 .createQuery("SELECT t FROM PhonebookEntry t", PhonebookEntry.class) //$NON-NLS-1$
                 .getResultList();
         if (checkList.size() == 0) {
-            createSampleData();
+            createSampleData(userkey);
         }
 
         final CriteriaBuilder criteriaBuilder = em.getCriteriaBuilder();
@@ -113,9 +123,10 @@ public class PhonebookServiceHandler {
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Returns entry with provided ID")
     @ApiResponses(value = { @ApiResponse(code = 200, message = "OK", response = PhonebookEntry.class),
-            @ApiResponse(code = 404, message = "Entry not found for given ID"),
-            @ApiResponse(code = 500, message = "Internal error") })
-    public PhonebookEntry getEntry(@PathParam("id") final String id) {
+            @ApiResponse(code = 404, message = "Entry not found for given ID") })
+    public PhonebookEntry getEntry(
+            @ApiParam(hidden = true) @HeaderParam("Authorization") final String userkey,
+            @PathParam("id") final String id) {
         final Long queryId = Long.parseLong(id);
         final PhonebookEntry dbEntry = em.find(PhonebookEntry.class, queryId);
         if (dbEntry != null) {
@@ -129,9 +140,9 @@ public class PhonebookServiceHandler {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Adds entry to phonebook")
-    @ApiResponses(value = { @ApiResponse(code = 201, message = "Created successfully"),
-            @ApiResponse(code = 500, message = "Internal error") })
-    public Response create(final PhonebookEntry entry) {
+    @ApiResponses(value = { @ApiResponse(code = 201, message = "Created successfully") })
+    public Response create(@ApiParam(hidden = true) @HeaderParam("Authorization") final String userkey,
+            final PhonebookEntry entry) {
         try {
             utx.begin();
             em.persist(entry);
@@ -158,9 +169,10 @@ public class PhonebookServiceHandler {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Updates an existing entry in the phonebook")
     @ApiResponses(value = { @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Entry not found for given ID"),
-            @ApiResponse(code = 500, message = "Internal error") })
-    public Response update(@PathParam("id") final String id, final PhonebookEntry entry) {
+            @ApiResponse(code = 404, message = "Entry not found for given ID") })
+    public Response update(@ApiParam(hidden = true) @HeaderParam("Authorization") final String userkey,
+            @PathParam("id") final String id, final PhonebookEntry entry) {
+
         final Long queryId = Long.parseLong(id);
 
         final PhonebookEntry dbEntry = em.find(PhonebookEntry.class, queryId);
@@ -187,9 +199,9 @@ public class PhonebookServiceHandler {
     @Path("{id}")
     @ApiOperation(value = "Deletes an existing entry from the phonebook")
     @ApiResponses(value = { @ApiResponse(code = 204, message = "OK"),
-            @ApiResponse(code = 404, message = "Entry not found for given ID"),
-            @ApiResponse(code = 500, message = "Internal error") })
-    public Response deleteEntry(@PathParam("id") final String id) {
+            @ApiResponse(code = 404, message = "Entry not found for given ID") })
+    public Response deleteEntry(@ApiParam(hidden = true) @HeaderParam("Authorization") final String userkey,
+            @PathParam("id") final String id) {
         final Long queryId = Long.parseLong(id);
 
         final PhonebookEntry dbEntry = em.find(PhonebookEntry.class, queryId);
@@ -208,9 +220,9 @@ public class PhonebookServiceHandler {
 
     }
 
-    private void createSampleData() {
-        create(new PhonebookEntry("Mr", "Fred", "Jones", "01962 000000")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-        create(new PhonebookEntry("Mrs", "Jane", "Doe", "01962 000001")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+    private void createSampleData(final String userkey) {
+        create(userkey, new PhonebookEntry("Mr", "Fred", "Jones", "01962 000000")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+        create(userkey, new PhonebookEntry("Mrs", "Jane", "Doe", "01962 000001")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
     }
 
     private UserTransaction getUserTransaction() {
@@ -235,4 +247,22 @@ public class PhonebookServiceHandler {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public void afterScan(final Reader reader, final Swagger swagger) {
+
+        final ApiKeyAuthDefinition authScheme = new ApiKeyAuthDefinition();
+        authScheme.setIn(In.HEADER);
+        authScheme.setName("Authorization"); //$NON-NLS-1$
+
+        swagger.addSecurityDefinition("apikey_auth", authScheme); //$NON-NLS-1$
+
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void beforeScan(final Reader arg0, final Swagger arg1) {
+        // TODO Auto-generated method stub
+
+    }
 }
