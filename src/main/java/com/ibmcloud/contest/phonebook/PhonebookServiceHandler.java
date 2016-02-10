@@ -274,7 +274,7 @@ public class PhonebookServiceHandler implements ReaderListener {
     @ApiOperation(value = "Creates new user entry")
     @ApiResponse(code = 201, message = "User created successfully", response = UserEntry.class)
     public Response createUser() {
-
+        randomDelay(1000, 1500);
         final String key = generateKey();
         final UserEntry user = new UserEntry(key);
         try {
@@ -343,14 +343,13 @@ public class PhonebookServiceHandler implements ReaderListener {
     }
 
     private boolean authenticateUser(final String userkey) {
+        randomDelay(1000, 1500);
         if (userkey == null) {
             return false;
         }
         final UserEntry checkEntry = em.find(UserEntry.class, userkey);
 
         if (checkEntry != null) {
-            // Issue random delay once user is authenticated
-            randomDelay(10, 500);
             return true;
         }
         return false;
