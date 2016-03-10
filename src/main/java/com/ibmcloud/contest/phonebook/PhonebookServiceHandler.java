@@ -140,7 +140,12 @@ public class PhonebookServiceHandler implements ReaderListener {
             throw new UnauthorizedException();
         }
 
-        final Long queryId = Long.parseLong(id);
+        final Long queryId;
+        try {
+            queryId = Long.parseLong(id);
+        } catch (final NumberFormatException e) {
+            throw new NotFoundException();
+        }
         final List<PhonebookEntry> dbEntries = em
                 .createQuery("SELECT t FROM PhonebookEntry t WHERE t.id = :id AND t.userkey = :user", //$NON-NLS-1$
                         PhonebookEntry.class)
@@ -167,6 +172,7 @@ public class PhonebookServiceHandler implements ReaderListener {
         }
 
         entry.setUserKey(userkey);
+        entry.fillNulls();
 
         try {
             utx.begin();
@@ -203,7 +209,12 @@ public class PhonebookServiceHandler implements ReaderListener {
             throw new UnauthorizedException();
         }
 
-        final Long queryId = Long.parseLong(id);
+        final Long queryId;
+        try {
+            queryId = Long.parseLong(id);
+        } catch (final NumberFormatException e) {
+            throw new NotFoundException();
+        }
 
         final List<PhonebookEntry> dbEntries = em
                 .createQuery("SELECT t FROM PhonebookEntry t WHERE t.id = :id AND t.userkey = :user", //$NON-NLS-1$
@@ -214,6 +225,7 @@ public class PhonebookServiceHandler implements ReaderListener {
             throw new NotFoundException();
         }
         final PhonebookEntry dbEntry = dbEntries.get(0);
+        entry.fillNulls();
         try {
             utx.begin();
             dbEntry.setTitle(entry.getTitle());
@@ -243,7 +255,12 @@ public class PhonebookServiceHandler implements ReaderListener {
             throw new UnauthorizedException();
         }
 
-        final Long queryId = Long.parseLong(id);
+        final Long queryId;
+        try {
+            queryId = Long.parseLong(id);
+        } catch (final NumberFormatException e) {
+            throw new NotFoundException();
+        }
 
         final List<PhonebookEntry> dbEntries = em
                 .createQuery("SELECT t FROM PhonebookEntry t WHERE t.id = :id AND t.userkey = :user", //$NON-NLS-1$

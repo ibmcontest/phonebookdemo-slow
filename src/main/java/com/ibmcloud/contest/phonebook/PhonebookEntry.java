@@ -146,4 +146,19 @@ public class PhonebookEntry {
                 && this.lastName == other.getLastName() && this.phoneNumber == other.getPhoneNumber());
     }
 
+    public void fillNulls() {
+        if (title == null) {
+            title = ""; //$NON-NLS-1$
+        }
+        if (firstName == null) {
+            firstName = ""; //$NON-NLS-1$
+        }
+        if (lastName == null) {
+            lastName = ""; //$NON-NLS-1$
+        }
+        if (phoneNumber == null) {
+            phoneNumber = ""; //$NON-NLS-1$
+        }
+    }
+
 }
