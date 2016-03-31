@@ -2,8 +2,8 @@ applications:
 - services:
   - phonebook-clearDB
   disk_quota: 1024M
-  host: phonebookdemo
-  name: phonebookdemo
+  host: phonebookdemo-slow
+  name: phonebookdemo-slow
   description: This application is a sample REST Phonebook that uses a MySQL DB, you can use it for the Integration Testing Service Tutorials.
   path: target/phonebookdemo.war
   buildpack: liberty-for-java
